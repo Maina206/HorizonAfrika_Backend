@@ -4,6 +4,7 @@ from Config.config import db
 
 
 
+
 class Package(db.Model):
     __tablename__ = 'package'
 
@@ -96,6 +97,6 @@ class Review(db.Model):
     review_texts = db.Column(db.Text, nullable=False)  
     date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)  
 
-    # Relationships
+    # # Relationships
     user = db.relationship('User', backref='reviews', lazy=True)
     package = db.relationship('Package', backref='reviews', lazy=True)
