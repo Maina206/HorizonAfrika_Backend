@@ -4,6 +4,7 @@ from Config.config import db
 
 
 
+
 class Package(db.Model):
     __tablename__ = 'package'
 
