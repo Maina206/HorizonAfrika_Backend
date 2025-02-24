@@ -80,7 +80,7 @@ def register_agency():
     try:
         data = request.get_json()
         
-        # make sure user enters all fields
+        # make sure agency enters all fields
         required_fields = ['agency_name', 'agency_email', 'agency_phone_number', 'description', 'agency_password']
         if not all(field in data for field in required_fields):
             return jsonify({"error": "Missing required fields"}), 400
@@ -99,7 +99,7 @@ def register_agency():
         if Agency.query.filter_by(agency_email=agency_email).first():
             return jsonify({"error": "Email already registered"}), 400
 
-        # Create a new client record
+        # Create a new agency record
         new_agency = Agency(
             agency_name=data['agency_name'],
             agency_email=agency_email,
