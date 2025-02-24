@@ -2,9 +2,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from Config.config import db
 
-
-
-
 class Package(db.Model):
     __tablename__ = 'package'
 
@@ -18,11 +15,29 @@ class Package(db.Model):
     exclusions = db.Column(db.Text, nullable=False)
     agency_id = db.Column(db.Integer, db.ForeignKey('agency.id'), nullable=False)
 
-    agency = db.relationship('Agency', back_populates='packages')
+    # Relationships
+    agency = db.relationship('Agency', back_populates='packages', lazy=True)
     bookings = db.relationship('Booking', back_populates='package', lazy=True)
     reviews = db.relationship('Review', back_populates='package', lazy=True)
     photos = db.relationship('Photo', back_populates='package', lazy=True)
-
+    
+    # return as json
+    def to_json(self):
+        return {
+            'id': self.id,
+            'package_name': self.package_name,
+            'price': self.price,
+            'location': self.location,
+            'day_count': self.day_count,
+            'package_type': self.package_type,
+            'inclusions': self.inclusions,
+            'exclusions': self.exclusions,
+            'agency_id': self.agency_id,
+            'agency': self.agency.to_json(),
+            'bookings': [booking.to_json() for booking in self.bookings],
+           'reviews': [review.to_json() for review in self.reviews],
+            'photos': [photo.to_json() for photo in self.photos]
+        }
 
 class Agency(db.Model):
     __tablename__ = 'agency'
@@ -42,7 +57,18 @@ class Agency(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.agency_password, password)
-
+    
+    # return as json
+    def to_json(self):
+        return {
+            'id': self.id,
+            'agency_name': self.agency_name,
+            'agency_email': self.agency_email,
+            'agency_phone_number': self.agency_phone_number,
+            'description': self.description,
+            'packages': [package.to_json() for package in self.packages],
+            'agency_password': self.agency_password
+        }
 
 class Booking(db.Model):
     __tablename__ = 'bookings'
@@ -51,12 +77,24 @@ class Booking(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     package_id = db.Column(db.Integer, db.ForeignKey('package.id'), nullable=False)
     amount = db.Column(db.Float, nullable=True)
-    billing_id = db.Column(db.Integer, db.ForeignKey('billing.id'), nullable=False)
+    billing_id = db.Column(db.Integer, db.ForeignKey('billings.id'), nullable=False)
 
     # Relationships
     user = db.relationship('User', back_populates='bookings', lazy=True)
     package = db.relationship('Package', back_populates='bookings', lazy=True)
-    billing = db.relationship('Billing', back_populates='bookings', lazy=True)
+    billing = db.relationship('Billing', back_populates='bookings', lazy=True, foreign_keys=[billing_id])
+    
+    # return as json
+    def to_json(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'package_id': self.package_id,
+            'amount': self.amount,
+            'billing_id': self.billing_id,
+            'package': self.package.to_json(),
+            'billing': self.billing.to_json()
+        }
 
 class Billing(db.Model):
     __tablename__ = 'billings'
@@ -69,7 +107,19 @@ class Billing(db.Model):
     payment_status = db.Column(db.String, nullable=False)
 
     # Relationship with Booking
-    bookings = db.relationship('Booking', back_populates='billing', lazy=True)
+    bookings = db.relationship('Booking', back_populates='billing', lazy=True, foreign_keys='Booking.billing_id')
+    
+    # return as data
+    def to_json(self):
+        return {
+            'id': self.id,
+            'checkoutID': self.checkoutID,
+            'phone_number': self.phone_number,
+           'response_description': self.response_description,
+            'customer_message': self.customer_message,
+            'payment_status': self.payment_status,
+            'bookings': [booking.to_json() for booking in self.bookings]
+        }
 
 class User(db.Model):
     __tablename__ = 'user'
@@ -93,6 +143,19 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password, password)
     
+    # return data as json
+    def to_json(self):
+        return {
+            'id': self.id,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'email': self.email,
+            'phone_number': self.phone_number,
+            'gender': self.gender,
+            'image_url': self.image_url,
+            "password":self.password
+        }
+    
 class Review(db.Model):
     __tablename__ = 'reviews'
 
@@ -107,7 +170,18 @@ class Review(db.Model):
     # Relationships
     user = db.relationship('User', back_populates='reviews', lazy=True)
     package = db.relationship('Package', back_populates='reviews', lazy=True)
-
+    
+    # return data as json
+    def to_json(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'package_id': self.package_id,
+            'image': self.image,
+            'rating': self.rating,
+           'review_texts': self.review_texts,
+            'date': self.date.strftime('%Y-%m-%d %H:%M:%S')
+        }
 
 class Photo(db.Model):
     __tablename__ = 'photos'
@@ -116,4 +190,12 @@ class Photo(db.Model):
     package_id = db.Column(db.Integer, db.ForeignKey('package.id'), nullable=False)
     photo_url = db.Column(db.String, nullable=False)
 
-    package = db.relationship('Package', back_populates='photos')
+    package = db.relationship('Package', back_populates='photos', lazy=True)
+    
+    # return data as json
+    def to_json(self):
+        return {
+            'id': self.id,
+            'package_id': self.package_id,
+            'photo_url': self.photo_url
+        }
