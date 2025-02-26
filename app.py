@@ -9,5 +9,8 @@ jwt = JWTManager(app)
 from auth import auth_bp;
 app.register_blueprint(auth_bp)
 
+from routes import routes_bp
+app.register_blueprint(routes_bp)
+
 if __name__ == '__main__':
     app.run(debug=True)

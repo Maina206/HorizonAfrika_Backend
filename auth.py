@@ -148,7 +148,7 @@ def client_login():
             return jsonify({"error": "Invalid credentials"}), 401
 
         # Create access token
-        access_token = create_access_token(identity=client.id, expires_delta=timedelta(days=3))
+        access_token = create_access_token(identity=f"{client.id}", expires_delta=timedelta(days=3))
 
         # Return successful login response
         return jsonify({
@@ -184,7 +184,7 @@ def agency_login():
             return jsonify({"error": "Invalid credentials"}), 401
 
         # Create access token
-        access_token = create_access_token(identity=agency.id, expires_delta=timedelta(days=3))
+        access_token = create_access_token(identity=f"{agency.id}", expires_delta=timedelta(days=3))
 
         # Return successful login response
         return jsonify({
