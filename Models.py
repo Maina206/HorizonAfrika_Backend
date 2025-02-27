@@ -17,12 +17,11 @@ class Package(db.Model):
 
     # Relationships
     agency = db.relationship('Agency', back_populates='packages')
-    bookings = db.relationship('Booking', back_populates='package')
-    reviews = db.relationship('Review', back_populates='package')
-    photos = db.relationship('Photo', back_populates='package')
-    billings = db.relationship('Billing', back_populates='package')
+    bookings = db.relationship('Booking', back_populates='package', passive_deletes=True, cascade='all, delete-orphan')  # Add cascade here
+    reviews = db.relationship('Review', back_populates='package', passive_deletes=True, cascade='all, delete-orphan')  # Add cascade here
+    photos = db.relationship('Photo', back_populates='package', passive_deletes=True, cascade='all, delete-orphan')  # Add cascade here
+    billings = db.relationship('Billing', back_populates='package', passive_deletes=True, cascade='all, delete-orphan')  # Add cascade here
 
-    # Return as JSON
     def to_json(self):
         return {
             'id': self.id,
@@ -40,6 +39,8 @@ class Package(db.Model):
             'photos': [photo.to_json() for photo in self.photos]
         }
 
+    
+
 
 class Agency(db.Model):
     __tablename__ = 'agency'
@@ -53,7 +54,7 @@ class Agency(db.Model):
 
     # Relationships
     packages = db.relationship('Package', back_populates='agency', lazy=True)
-    bookings = db.relationship('Booking', back_populates='agency', lazy=True)  # Added relationship
+    bookings = db.relationship('Booking', back_populates='agency', lazy=True)
 
     def set_password(self, password):
         self.agency_password = generate_password_hash(password)
@@ -117,7 +118,7 @@ class Billing(db.Model):
     response_description = db.Column(db.Text, nullable=True)
     customer_message = db.Column(db.Text, nullable=True)
     payment_status = db.Column(db.String, nullable=False)
-    package_id = db.Column(db.Integer, db.ForeignKey('package.id'), nullable=False)
+    package_id = db.Column(db.Integer, db.ForeignKey('package.id', ondelete='SET NULL'), nullable=True)  # ondelete='SET NULL'
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     # Relationships

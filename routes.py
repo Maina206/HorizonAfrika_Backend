@@ -382,7 +382,7 @@ def delete_package():
     agency = Agency.query.get(current_user_id)
 
     if not agency:
-        return jsonify({'message':'Only agencies can access this information'}), 400
+        return jsonify({'message': 'Only agencies can access this information'}), 400
 
     # Get the package ID from the request
     package_id = request.json.get('package_id')
@@ -396,11 +396,28 @@ def delete_package():
     if not package:
         return jsonify({"message": "Package not found or doesn't belong to your agency"}), 400
 
-    # Delete the package
-    db.session.delete(package)
-    db.session.commit()
+    try:
+        # Manually delete associated records (e.g., bookings, reviews, photos, billings)
+        # Example: Delete bookings associated with the package
+        for booking in package.bookings:
+            db.session.delete(booking)
 
-    return jsonify({"message": "Package deleted successfully"}), 200
+        # Example: Delete reviews associated with the package
+        for review in package.reviews:
+            db.session.delete(review)
 
+        # Example: Delete photos associated with the package
+        for photo in package.photos:
+            db.session.delete(photo)
 
-    
+        # Example: Delete billings associated with the package
+        for billing in package.billings:
+            db.session.delete(billing)
+
+        # Now delete the package
+        db.session.delete(package)
+        db.session.commit()
+        return jsonify({"message": "Package and associated records deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": f"Failed to delete package: {str(e)}"}), 500
