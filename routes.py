@@ -11,14 +11,14 @@ routes_bp = Blueprint('routes', __name__)
 @routes_bp.route('/packages', methods=['GET'])
 @jwt_required()
 def get_packages():
-    current_user_id = get_jwt_identity()  
-    agency= Agency.query.get(current_user_id) 
+    current_user_id = get_jwt_identity()
+    agency= Agency.query.get(current_user_id)
 
     if not agency:
         return jsonify({'error': 'Unauthorized access'}), 403
 
-       
-    packages = Package.query.filter_by(agency=agency).all() 
+
+    packages = Package.query.filter_by(agency=agency).all()
     return jsonify([package.to_json() for package in packages])
 
 @routes_bp.route('/packages', methods=['POST'])
@@ -32,16 +32,16 @@ def create_package():
     if not agency:
         return jsonify({"error": "Only agencies can create packages"}), 403
 
-    
+
     required_fields = ['package_name', 'price', 'day_count', 'location', 'package_type', 'inclusions', 'exclusions']
     if not all(field in data for field in required_fields):
         return jsonify({"message": "Missing required fields"}), 400
 
-    
+
     if Package.query.filter_by(package_name=data['package_name']).first():
         return jsonify({"message": "Package already exists"}), 400
 
-    
+
     new_package = Package(
         package_name=data['package_name'],
         price=data['price'],
@@ -50,14 +50,14 @@ def create_package():
         package_type=data['package_type'],
         inclusions=data['inclusions'],
         exclusions=data['exclusions'],
-        agency_id=agency.id  
+        agency_id=agency.id
     )
 
     try:
         db.session.add(new_package)
         db.session.commit()
 
-        
+
         return jsonify({
             "message": "Package created successfully",
             "package": {
@@ -76,7 +76,7 @@ def create_package():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-    
+
 
 
 @routes_bp.route('/packages/book', methods=['POST'])
@@ -91,9 +91,9 @@ def book_now():
             'customer_message': 'Failed request',
             'status': 'Failed'
         }), 400
-    
+
     package_id = data['package_id']
-    
+
     # Get the client information
     client = User.query.get(current_client_id)
     if not client:
@@ -102,7 +102,7 @@ def book_now():
             'customer_message': 'Failed request',
             'status': 'Failed'
         }), 400
-    
+
     # Get the travel package information
     travel_package = Package.query.get(package_id)
     if not travel_package:
@@ -111,21 +111,21 @@ def book_now():
             'customer_message': 'Package has not been found',
             'status': 'Failed'
         }), 404
-    
+
     # Check if the current user has already made a booking for the same package and is still pending
     existing_booking = Booking.query.filter_by(
         user_id=current_client_id,
         package_id=package_id,
         status='Pending'
     ).first()
-    
+
     if existing_booking:
         return jsonify({
             'message': 'Failed',
             'customer_message': 'You have not paid the full amount',
             'status': 'Pending'
         }), 400
-    
+
     # Fetch the agency associated with the travel package
     agency = Agency.query.get(travel_package.agency_id)
     if not agency:
@@ -134,38 +134,38 @@ def book_now():
             'customer_message': 'Package is not associated with any agency',
             'status': 'Failed'
         }), 400
-    
+
     # Additional information
-    first_name = client.first_name  
-    email = client.email  
-    price = travel_package.price  
-    
+    first_name = client.first_name
+    email = client.email
+    price = travel_package.price
+
     # Create new billing entry
     new_billing = Billing(
         package_id=package_id,
         user_id=current_client_id,
         amount=price,
-        payment_status='Pending',  
-        phone_number=client.phone_number,  
-        checkoutID=None, 
+        payment_status='Pending',
+        phone_number=client.phone_number,
+        checkoutID=None,
         response_description=None,
-        customer_message='You have successfully booked' 
+        customer_message='You have successfully booked'
     )
     db.session.add(new_billing)
     db.session.commit()
-    
+
     # Create a new booking entry, including the agency_id in the booking
     new_booking = Booking(
         user_id=current_client_id,
         package_id=package_id,
         booking_date=datetime.utcnow(),
-        status='Successful',  
+        status='Successful',
         billing_id=new_billing.id,
         agency_id=agency.id  # Here we are assigning the correct agency_id to the booking
     )
     db.session.add(new_booking)
     db.session.commit()
-    
+
     # Return the booking confirmation and agency details
     return jsonify({
         'message': 'Successful',
@@ -186,13 +186,13 @@ def create_review():
     current_user_id = get_jwt_identity()
     data = request.get_json()
 
-    
+
     if not data or 'rating' not in data or 'review_texts' not in data or 'package_id' not in data:
         return jsonify({'error': 'must put all the credentials '}), 400
 
     package_id = data['package_id']
 
-    
+
     client = User.query.get(current_user_id)
     if not client:
         return jsonify({'error': 'Only users can make reviews'}), 400
@@ -210,20 +210,20 @@ def create_review():
     if existant_review:
         return jsonify({'error': 'You have already reviewed this package'}), 400
 
-    
+
     new_review = Review(
         user_id=current_user_id,
         package_id=package_id,
         rating=data['rating'],
         review_texts=data['review_texts'],
         date=datetime.utcnow(),
-        image=data.get('image')  
+        image=data.get('image')
     )
 
     db.session.add(new_review)
     db.session.commit()
 
-    
+
     return jsonify({
         'message': 'You have successfully reviewed this package',
         'user_id': current_user_id,
@@ -246,7 +246,7 @@ def get_reviews():
 
     if not user:
         return jsonify({"message":"only users can access their reviews"}),400
-    
+
     reviews = Review.query.filter_by(user=user).all()
 
     return jsonify([review.to_json() for review in reviews])
@@ -255,29 +255,29 @@ def get_reviews():
 @routes_bp.route('/reviews/agency', methods=['POST'])
 @jwt_required()
 def get_package_reviews_for_agency():
-    
+
     current_user_id = get_jwt_identity()
-    
+
     agency = Agency.query.get(current_user_id)
 
     if not agency:
         return jsonify({'message': 'Only agencies can access this info'}), 400
-    
-    
-    packages = Package.query.filter_by(agency_id=agency.id).all()  
-    
+
+
+    packages = Package.query.filter_by(agency_id=agency.id).all()
+
     if not packages:
         return jsonify({"message": "No packages found for this agency"}), 404
-    
-    
+
+
     reviews = []
     for package in packages:
-        package_reviews = Review.query.filter_by(package_id=package.id).all() 
+        package_reviews = Review.query.filter_by(package_id=package.id).all()
         reviews.extend(package_reviews)
 
     if not reviews:
         return jsonify({"message": "No reviews found for the agency's packages"}), 404
-    
+
     # Return the reviews as JSON
     return jsonify([review.to_json() for review in reviews])  # Assuming review has a to_json method
 
@@ -292,12 +292,12 @@ def get_package_reviews_for_agency():
 
 #     if not agency:
 #         return jsonify({'message':"only agencies can access this info"}),400
-    
+
 
 #     bookings = Booking.query.filter_by(agency=agency).all()
 
 #     return jsonify([booking.to_json() for booking in bookings])
-    
+
 
 @routes_bp.route('/bookings', methods=['GET'])
 @jwt_required()
@@ -339,7 +339,7 @@ def get_bookings():
     booking_data = []
     for booking, first_name, email, price, location, package_name in bookings:
         booking_data.append({
-            
+
             'user_first_name': first_name,
             'user_email': email,
             'price_paid': price,
@@ -364,14 +364,14 @@ def get_bookings():
 
 #     if not agency:
 #         return jsonify({'message':'only agencies can access info'}),400
-    
+
 #     package = Package.query.filter_by(agency=agency).all()
 
 #     if not package:
 #         return jsonify({"message":"package not found"}),400
-    
-    
-  
+
+
+
 
 @routes_bp.route('/package/delete', methods=['DELETE'])
 @jwt_required()
@@ -403,4 +403,3 @@ def delete_package():
     return jsonify({"message": "Package deleted successfully"}), 200
 
 
-    
