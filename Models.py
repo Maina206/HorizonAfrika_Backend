@@ -34,11 +34,30 @@ class Package(db.Model):
             'inclusions': self.inclusions,
             'exclusions': self.exclusions,
             'agency_id': self.agency_id,
-            'agency': self.agency.to_json() if self.agency else None,
-            'bookings': [booking.to_json() for booking in self.bookings],
-            'reviews': [review.to_json() for review in self.reviews],
-            'photos': [photo.to_json() for photo in self.photos]
-        }
+            # TODO: Use this as a reference point for other objects that are needed in the object
+            'agency': {
+                'id': self.agency.id,
+                'agency_name': self.agency.agency_name,
+                'agency_email': self.agency.agency_email,
+                'agency_phone_number': self.agency.agency_phone_number,
+                'description': self.agency.description,
+            } if self.agency else None,
+            'bookings': [{
+            'id': booking.id,
+            'booking_date': booking.booking_date.strftime('%Y-%m-%d %H:%M:%S'),
+            'status': booking.status
+        } for booking in self.bookings] if self.bookings else [],
+        'reviews': [{
+            'id': review.id,
+            'rating': review.rating,
+            'review_texts': review.review_texts,
+            'date': review.date.strftime('%Y-%m-%d %H:%M:%S')
+        } for review in self.reviews] if self.reviews else [],
+        'photos': [{
+            'id': photo.id,
+            'photo_url': photo.photo_url
+        } for photo in self.photos] if self.photos else []
+    }
 
 
 class Agency(db.Model):
@@ -64,14 +83,25 @@ class Agency(db.Model):
     # Return as JSON
     def to_json(self):
         return {
-            'id': self.id,
-            'agency_name': self.agency_name,
-            'agency_email': self.agency_email,
-            'agency_phone_number': self.agency_phone_number,
-            'description': self.description,
-            'packages': [package.to_json() for package in self.packages],
-            'bookings': [booking.to_json() for booking in self.bookings]
-        }
+        'id': self.id,
+        'agency_name': self.agency_name,
+        'agency_email': self.agency_email,
+        'agency_phone_number': self.agency_phone_number,
+        'description': self.description,
+        'packages': [{
+            'id': package.id,
+            'package_name': package.package_name,
+            'price': package.price,
+            'location': package.location,
+            'day_count': package.day_count
+        } for package in self.packages] if self.packages else [],
+        'bookings': [{
+            'id': booking.id,
+            'booking_date': booking.booking_date.strftime('%Y-%m-%d %H:%M:%S'),
+            'status': booking.status
+        } for booking in self.bookings] if self.bookings else []
+    }
+
 
 
 class Booking(db.Model):
@@ -94,17 +124,27 @@ class Booking(db.Model):
     # Return as JSON
     def to_json(self):
         return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'package_id': self.package_id,
-            'agency_id': self.agency_id,
-            'booking_date': self.booking_date.strftime('%Y-%m-%d %H:%M:%S'),
-            'status': self.status,
-            'billing_id': self.billing_id,
-            'package': self.package.to_json() if self.package else None,
-            'billing': self.billing.to_json() if self.billing else None,
-            'agency': self.agency.to_json() if self.agency else None
-        }
+        'id': self.id,
+        'user_id': self.user_id,
+        'package_id': self.package_id,
+        'agency_id': self.agency_id,
+        'booking_date': self.booking_date.strftime('%Y-%m-%d %H:%M:%S'),
+        'status': self.status,
+        'billing_id': self.billing_id,
+        'package': {
+            'id': self.package.id,
+            'name': self.package.name
+        } if self.package else None,
+        'billing': {
+            'id': self.billing.id,
+            'amount': self.billing.amount
+        } if self.billing else None,
+        'agency': {
+            'id': self.agency.id,
+            'name': self.agency.name
+        } if self.agency else None
+    }
+
 
 
 class Billing(db.Model):
@@ -126,19 +166,24 @@ class Billing(db.Model):
     booking = db.relationship('Booking', back_populates='billing', uselist=False)
 
     # Return as JSON
-    def to_json(self):
-        return {
-            'id': self.id,
-            'checkoutID': self.checkoutID,
-            'phone_number': self.phone_number,
-            'amount': self.amount,
-            'response_description': self.response_description,
-            'customer_message': self.customer_message,
-            'payment_status': self.payment_status,
-            'package_id': self.package_id,
-            'user_id': self.user_id,
-            'booking': self.booking.to_json() if self.booking else None
-        }
+def to_json(self):
+    return {
+        'id': self.id,
+        'checkoutID': self.checkoutID,
+        'phone_number': self.phone_number,
+        'amount': self.amount,
+        'response_description': self.response_description,
+        'customer_message': self.customer_message,
+        'payment_status': self.payment_status,
+        'package_id': self.package_id,
+        'user_id': self.user_id,
+        'booking': {
+            'id': self.booking.id,
+            'booking_date': self.booking.booking_date.strftime('%Y-%m-%d %H:%M:%S'),
+            'status': self.booking.status
+        } if self.booking else None
+    }
+
 
 
 class User(db.Model):
@@ -167,17 +212,30 @@ class User(db.Model):
     # Return as JSON
     def to_json(self):
         return {
-            'id': self.id,
-            'first_name': self.first_name,
-            'last_name': self.last_name,
-            'email': self.email,
-            'phone_number': self.phone_number,
-            'gender': self.gender,
-            'image_url': self.image_url,
-            'bookings': [booking.to_json() for booking in self.bookings],
-            'reviews': [review.to_json() for review in self.reviews],
-            'billings': [billing.to_json() for billing in self.billings]
-        }
+        'id': self.id,
+        'first_name': self.first_name,
+        'last_name': self.last_name,
+        'email': self.email,
+        'phone_number': self.phone_number,
+        'gender': self.gender,
+        'image_url': self.image_url,
+        'bookings': [{
+            'id': booking.id,
+            'booking_date': booking.booking_date.strftime('%Y-%m-%d %H:%M:%S'),
+            'status': booking.status
+        } for booking in self.bookings] if self.bookings else [],
+        'reviews': [{
+            'id': review.id,
+            'rating': review.rating,
+            'comment': review.comment
+        } for review in self.reviews] if self.reviews else [],
+        'billings': [{
+            'id': billing.id,
+            'amount': billing.amount,
+            'payment_status': billing.payment_status
+        } for billing in self.billings] if self.billings else []
+    }
+
 
 
 class Review(db.Model):
@@ -198,16 +256,26 @@ class Review(db.Model):
     # Return as JSON
     def to_json(self):
         return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'package_id': self.package_id,
-            'image': self.image,
-            'rating': self.rating,
-            'review_texts': self.review_texts,
-            'date': self.date.strftime('%Y-%m-%d %H:%M:%S'),
-            'user': self.user.to_json() if self.user else None,
-            'package': self.package.to_json() if self.package else None
-        }
+        'id': self.id,
+        'user_id': self.user_id,
+        'package_id': self.package_id,
+        'image': self.image,
+        'rating': self.rating,
+        'review_texts': self.review_texts,
+        'date': self.date.strftime('%Y-%m-%d %H:%M:%S'),
+        'user': {
+            'id': self.user.id,
+            'first_name': self.user.first_name,
+            'last_name': self.user.last_name,
+            'email': self.user.email
+        } if self.user else None,
+        'package': {
+            'id': self.package.id,
+            'name': self.package.name,
+            'price': self.package.price
+        } if self.package else None
+    }
+
 
 
 class Photo(db.Model):
@@ -222,8 +290,12 @@ class Photo(db.Model):
     # Return as JSON
     def to_json(self):
         return {
-            'id': self.id,
-            'package_id': self.package_id,
-            'photo_url': self.photo_url,
-            'package': self.package.to_json() if self.package else None
-        }
+        'id': self.id,
+        'package_id': self.package_id,
+        'photo_url': self.photo_url,
+        'package': {
+            'id': self.package.id,
+            'name': self.package.name,
+            'price': self.package.price
+        } if self.package else None
+    }

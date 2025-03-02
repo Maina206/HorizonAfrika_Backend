@@ -32,7 +32,7 @@ def create_package():
     if not agency:
         return jsonify({"error": "Only agencies can create packages"}), 403
 
-    
+    # TODO: add a field for getting an image file
     required_fields = ['package_name', 'price', 'day_count', 'location', 'package_type', 'inclusions', 'exclusions']
     if not all(field in data for field in required_fields):
         return jsonify({"message": "Missing required fields"}), 400
@@ -403,4 +403,53 @@ def delete_package():
     return jsonify({"message": "Package deleted successfully"}), 200
 
 
-    
+@routes_bp.route('/package/update', methods=['PUT'])
+@jwt_required()
+def update_package():
+    try:
+        current_user_id = get_jwt_identity()
+        agency = Agency.query.get(current_user_id)
+
+        if not agency:
+            return jsonify({'message': 'Only agencies can access this information'}), 403
+
+        package_id = request.json.get('package_id')
+        package_name = request.json.get('package_name')
+        price = request.json.get('price')
+        location = request.json.get('location')
+        day_count = request.json.get('day_count')
+        package_type = request.json.get('package_type')
+        inclusions = request.json.get('inclusions')
+        exclusions = request.json.get('exclusions')
+
+        if not package_id or not isinstance(package_id, int):
+            return jsonify({'message': 'Valid Package ID is required'}), 400
+
+        package = Package.query.filter_by(id=package_id, agency_id=agency.id).first()
+
+        if not package:
+            return jsonify({"message": "Package not found or doesn't belong to your agency"}), 404
+
+        # Update only the fields provided in the request
+        if package_name:
+            package.package_name = package_name
+        if price:
+            package.price = price
+        if location:
+            package.location = location
+        if day_count:
+            package.day_count = day_count
+        if package_type:
+            package.package_type = package_type
+        if inclusions:
+            package.inclusions = inclusions
+        if exclusions:
+            package.exclusions = exclusions
+
+        db.session.commit()
+
+        return jsonify({"message": "Package updated successfully"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": "An error occurred while updating the package", "error": str(e)}), 500
