@@ -434,18 +434,18 @@ def delete_package():
     if not package:
         return jsonify({"message": "Package not found or doesn't belong to your agency"}), 400
 
-    # try:
+    try:
         
-    #     for booking in package.bookings:
-    #         db.session.delete(booking)
+        for booking in package.bookings:
+            db.session.delete(booking)
 
         
-    #     for review in package.reviews:
-    #         db.session.delete(review)
+        for review in package.reviews:
+            db.session.delete(review)
 
         
-    #     for photo in package.photos:
-    #         db.session.delete(photo)
+        for photo in package.photos:
+            db.session.delete(photo)
 
    
         for billing in package.billings:
