@@ -32,7 +32,7 @@ def create_package():
     if not agency:
         return jsonify({"error": "Only agencies can create packages"}), 403
 
-    
+    # TODO: add a field for getting an image file
     required_fields = ['package_name', 'price', 'day_count', 'location', 'package_type', 'inclusions', 'exclusions']
     if not all(field in data for field in required_fields):
         return jsonify({"message": "Missing required fields"}), 400
@@ -427,6 +427,7 @@ def delete_package():
         for photo in package.photos:
             db.session.delete(photo)
 
+<<<<<<< HEAD
    
         for billing in package.billings:
             db.session.delete(billing)
@@ -440,6 +441,8 @@ def delete_package():
         return jsonify({"message": f"Failed to delete package: {str(e)}"}), 500
 
         
+=======
+>>>>>>> d456f75adc9d8c828a9c18c8bfc4d9284efe89a2
 @routes_bp.route('/package/update', methods=['PUT'])
 @jwt_required()
 def update_package():
@@ -489,4 +492,8 @@ def update_package():
 
     except Exception as e:
         db.session.rollback()
+<<<<<<< HEAD
         return jsonify({"message": "An error occurred while updating the package", "error": str(e)}), 500
+=======
+        return jsonify({"message": "An error occurred while updating the package", "error": str(e)}), 500
+>>>>>>> d456f75adc9d8c828a9c18c8bfc4d9284efe89a2
