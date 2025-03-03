@@ -59,7 +59,6 @@ class Package(db.Model):
         } for photo in self.photos] if self.photos else []
     }
 
-
 class Agency(db.Model):
     __tablename__ = 'agency'
 
@@ -72,7 +71,7 @@ class Agency(db.Model):
 
     # Relationships
     packages = db.relationship('Package', back_populates='agency', lazy=True)
-    bookings = db.relationship('Booking', back_populates='agency', lazy=True)  # Added relationship
+    bookings = db.relationship('Booking', back_populates='agency', lazy=True)
 
     def set_password(self, password):
         self.agency_password = generate_password_hash(password)
@@ -103,14 +102,13 @@ class Agency(db.Model):
     }
 
 
-
 class Booking(db.Model):
     __tablename__ = 'bookings'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     package_id = db.Column(db.Integer, db.ForeignKey('package.id'), nullable=False)
-    agency_id = db.Column(db.Integer, db.ForeignKey('agency.id'), nullable=True)  # New column
+    agency_id = db.Column(db.Integer, db.ForeignKey('agency.id'), nullable=True)
     booking_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     status = db.Column(db.String, nullable=False, default='Pending')
     billing_id = db.Column(db.Integer, db.ForeignKey('billings.id'), nullable=True)
@@ -118,8 +116,8 @@ class Booking(db.Model):
     # Relationships
     user = db.relationship('User', back_populates='bookings')
     package = db.relationship('Package', back_populates='bookings')
-    billing = db.relationship('Billing', back_populates='booking')
-    agency = db.relationship('Agency', back_populates='bookings')  # New relationship
+    billing = db.relationship('Billing', back_populates='booking', uselist=False)
+    agency = db.relationship('Agency', back_populates='bookings')
 
     # Return as JSON
     def to_json(self):
@@ -144,7 +142,6 @@ class Booking(db.Model):
             'name': self.agency.name
         } if self.agency else None
     }
-
 
 
 class Billing(db.Model):
@@ -183,7 +180,6 @@ def to_json(self):
             'status': self.booking.status
         } if self.booking else None
     }
-
 
 
 class User(db.Model):
@@ -237,7 +233,6 @@ class User(db.Model):
     }
 
 
-
 class Review(db.Model):
     __tablename__ = 'reviews'
 
@@ -250,8 +245,8 @@ class Review(db.Model):
     date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
-    user = db.relationship('User', back_populates='reviews', lazy=True)
-    package = db.relationship('Package', back_populates='reviews', lazy=True)
+    user = db.relationship('User', back_populates='reviews')
+    package = db.relationship('Package', back_populates='reviews')
 
     # Return as JSON
     def to_json(self):
@@ -277,7 +272,6 @@ class Review(db.Model):
     }
 
 
-
 class Photo(db.Model):
     __tablename__ = 'photos'
 
@@ -285,7 +279,7 @@ class Photo(db.Model):
     package_id = db.Column(db.Integer, db.ForeignKey('package.id'), nullable=False)
     photo_url = db.Column(db.String, nullable=False)
 
-    package = db.relationship('Package', back_populates='photos', lazy=True)
+    package = db.relationship('Package', back_populates='photos')
 
     # Return as JSON
     def to_json(self):
