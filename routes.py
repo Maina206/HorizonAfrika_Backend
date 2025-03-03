@@ -427,22 +427,6 @@ def delete_package():
         for photo in package.photos:
             db.session.delete(photo)
 
-<<<<<<< HEAD
-   
-        for billing in package.billings:
-            db.session.delete(billing)
-
-       
-        db.session.delete(package)
-        db.session.commit()
-        return jsonify({"message": "Package and associated records deleted successfully"}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"message": f"Failed to delete package: {str(e)}"}), 500
-
-        
-=======
->>>>>>> d456f75adc9d8c828a9c18c8bfc4d9284efe89a2
 @routes_bp.route('/package/update', methods=['PUT'])
 @jwt_required()
 def update_package():
@@ -492,8 +476,4 @@ def update_package():
 
     except Exception as e:
         db.session.rollback()
-<<<<<<< HEAD
         return jsonify({"message": "An error occurred while updating the package", "error": str(e)}), 500
-=======
-        return jsonify({"message": "An error occurred while updating the package", "error": str(e)}), 500
->>>>>>> d456f75adc9d8c828a9c18c8bfc4d9284efe89a2
