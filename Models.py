@@ -148,7 +148,7 @@ class Billing(db.Model):
     __tablename__ = 'billings'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    checkoutID = db.Column(db.BigInteger, nullable=True)
+    checkoutID = db.Column(db.String(50), nullable=True)
     phone_number = db.Column(db.String, nullable=False)
     amount = db.Column(db.Float, nullable=True)
     response_description = db.Column(db.Text, nullable=True)
@@ -163,23 +163,23 @@ class Billing(db.Model):
     booking = db.relationship('Booking', back_populates='billing', uselist=False)
 
     # Return as JSON
-def to_json(self):
-    return {
-        'id': self.id,
-        'checkoutID': self.checkoutID,
-        'phone_number': self.phone_number,
-        'amount': self.amount,
-        'response_description': self.response_description,
-        'customer_message': self.customer_message,
-        'payment_status': self.payment_status,
-        'package_id': self.package_id,
-        'user_id': self.user_id,
-        'booking': {
-            'id': self.booking.id,
-            'booking_date': self.booking.booking_date.strftime('%Y-%m-%d %H:%M:%S'),
-            'status': self.booking.status
-        } if self.booking else None
-    }
+    def to_json(self):
+        return {
+            'id': self.id,
+            'checkoutID': self.checkoutID,
+            'phone_number': self.phone_number,
+            'amount': self.amount,
+            'response_description': self.response_description,
+            'customer_message': self.customer_message,
+            'payment_status': self.payment_status,
+            'package_id': self.package_id,
+            'user_id': self.user_id,
+            'booking': {
+                'id': self.booking.id,
+                'booking_date': self.booking.booking_date.strftime('%Y-%m-%d %H:%M:%S'),
+                'status': self.booking.status
+            } if self.booking else None
+        }
 
 
 class User(db.Model):
