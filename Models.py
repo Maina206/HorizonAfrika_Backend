@@ -34,6 +34,7 @@ class Package(db.Model):
             'inclusions': self.inclusions,
             'exclusions': self.exclusions,
             'agency_id': self.agency_id,
+            # TODO: Use this as a reference point for other objects that are needed in the object
             'agency': {
                 'id': self.agency.id,
                 'agency_name': self.agency.agency_name,
