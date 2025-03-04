@@ -27,7 +27,7 @@ def upload_photo(file, folder="horizon_afrika"):
         dict: Dictionary containing the upload result including the URL
     """
     try:
-        upload_result = cloudinary_config.uploader.upload(
+        upload_result = cloudinary.config.uploader.upload(
             file,
             folder=folder,
             resource_type="auto"
@@ -54,7 +54,7 @@ def delete_photo(public_id):
         dict: Dictionary containing the deletion result
     """
     try:
-        result = cloudinary_config.uploader.destroy(public_id)
+        result = cloudinary.config.uploader.destroy(public_id)
         return {
             "success": True,
             "result": result
