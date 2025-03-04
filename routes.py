@@ -10,6 +10,18 @@ from Mpesa import MpesaAPI
 routes_bp = Blueprint('routes', __name__)
 
 
+#fetch packages for client
+@routes_bp.route('/packages/client', methods=['GET'])
+def get_packages_client():
+    packages = Package.query.all()  # Fetch all packages (no login required)
+    return jsonify([package.to_json() for package in packages])
+
+# For each package on pop-up modal
+@routes_bp.route('/packages/<int:package_id>', methods=['GET'])
+def get_each_package(package_id):
+    package = Package.query.get_or_404(package_id)
+    return jsonify(package.to_json())
+
 @routes_bp.route('/packages', methods=['GET'])
 @jwt_required()
 def get_packages():
@@ -434,18 +446,18 @@ def delete_package():
     if not package:
         return jsonify({"message": "Package not found or doesn't belong to your agency"}), 400
 
-    # try:
+    try:
         
-    #     for booking in package.bookings:
-    #         db.session.delete(booking)
+        for booking in package.bookings:
+            db.session.delete(booking)
 
         
-    #     for review in package.reviews:
-    #         db.session.delete(review)
+        for review in package.reviews:
+            db.session.delete(review)
 
         
-    #     for photo in package.photos:
-    #         db.session.delete(photo)
+        for photo in package.photos:
+            db.session.delete(photo)
 
    
         for billing in package.billings:
