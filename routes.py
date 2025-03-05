@@ -71,7 +71,7 @@ def create_package():
 
         db.session.add(new_package)
         # db.session.flush()
-        db.session.commit()  # This assigns an ID to new_package without committing
+        db.session.commit()  
 
         # Handle photo uploads if present
         uploaded_photos = []
@@ -83,6 +83,7 @@ def create_package():
                 if photo_file.filename != '':
                     # Upload to Cloudinary
                     upload_result = upload_photo(photo_file)
+                    print(upload_result)
                     
                     if upload_result['success']:
                         # Save photo URL to database
