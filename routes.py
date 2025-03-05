@@ -70,12 +70,15 @@ def create_package():
         )
 
         db.session.add(new_package)
-        db.session.flush()  # This assigns an ID to new_package without committing
+        # db.session.flush()
+        db.session.commit()  # This assigns an ID to new_package without committing
 
         # Handle photo uploads if present
         uploaded_photos = []
-        if request.files and 'photos' in request.files:
+        if 'photos' in request.files:
             photos = request.files.getlist('photos') # This handles receiving of photos
+            print(request.files.getlist('photos'))
+
             for photo_file in photos:
                 if photo_file.filename != '':
                     # Upload to Cloudinary
@@ -650,7 +653,7 @@ def initiate_payment():
         billing = Billing(
             package_id=package.id,
             user_id=user.id,
-            amount=package.price,
+            amount=1,
             payment_status='Pending',
             phone_number=phone_number,
             customer_message='Payment initiated'
@@ -661,7 +664,7 @@ def initiate_payment():
         # Initiate STK Push
         result = mpesa.initiate_stk_push(
             phone_number=phone_number,
-            amount=int(package.price),
+            amount=1,
             reference=reference
         )
 
