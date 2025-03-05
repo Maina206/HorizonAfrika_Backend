@@ -9,6 +9,29 @@ from Mpesa import MpesaAPI
 
 routes_bp = Blueprint('routes', __name__)
 
+@routes_bp.route('/packages/all', methods=['GET'])
+def get_all_packages():
+    try:
+        packages = Package.query.all()
+        
+        return jsonify([package.to_json() for package in packages]), 200
+
+    except Exception as e:
+        return jsonify({'error': 'An error occurred', 'message': str(e)}), 500
+
+
+
+#fetch packages for client
+@routes_bp.route('/packages/client', methods=['GET'])
+def get_packages_client():
+    packages = Package.query.all()  # Fetch all packages (no login required)
+    return jsonify([package.to_json() for package in packages])
+
+# For each package on pop-up modal
+@routes_bp.route('/packages/<int:package_id>', methods=['GET'])
+def get_each_package(package_id):
+    package = Package.query.get_or_404(package_id)
+    return jsonify(package.to_json())
 
 @routes_bp.route('/packages', methods=['GET'])
 @jwt_required()
@@ -389,13 +412,19 @@ def delete_package(package_id):
         return jsonify({"message": "Package not found or doesn't belong to your agency"}), 400
 
     try:
-        # Delete associated records
+        
         for booking in package.bookings:
             db.session.delete(booking)
+
+        
         for review in package.reviews:
             db.session.delete(review)
+
+        
         for photo in package.photos:
             db.session.delete(photo)
+
+   
         for billing in package.billings:
             db.session.delete(billing)
 
@@ -546,21 +575,26 @@ def initiate_payment():
             return jsonify({'message': 'User not found'}), 404
 
         data = request.get_json()
-        if not data or 'package_id' not in data:
-            return jsonify({'message': 'Package ID is required'}), 400
+
+        if not data or 'package_id' not in data or 'phone_number' not in data:
+            return jsonify({'message': 'Package ID and phone number are required'}), 400
 
         package = Package.query.get(data['package_id'])
         if not package:
             return jsonify({'message': 'Package not found'}), 404
 
         # Format phone number (remove leading 0 and add country code if necessary)
-        phone_number = user.phone_number
+        phone_number = data['phone_number']
         if phone_number.startswith('0'):
             phone_number = '254' + phone_number[1:]
         elif not phone_number.startswith('254'):
             phone_number = '254' + phone_number
 
-        # Create a reference number (you can modify this format)
+        # Validate phone number format
+        if not phone_number.isdigit() or len(phone_number) != 12:
+            return jsonify({'message': 'Invalid phone number format. Use format: 0712345678 or 254712345678'}), 400
+
+        # Create a reference number
         reference = f"PKG{package.id}USR{user.id}{datetime.now().strftime('%Y%m%d%H%M')}"
 
         # Initialize M-Pesa API
@@ -576,12 +610,12 @@ def initiate_payment():
             customer_message='Payment initiated'
         )
         db.session.add(billing)
-        db.session.flush()  # Get billing ID without committing
+        db.session.flush()
 
         # Initiate STK Push
         result = mpesa.initiate_stk_push(
             phone_number=phone_number,
-            amount=int(package.price),  # M-Pesa requires integer amounts
+            amount=int(package.price),
             reference=reference
         )
 
@@ -591,12 +625,15 @@ def initiate_payment():
             billing.response_description = result['message']
             db.session.commit()
 
-            return jsonify({
+            response_data = {
                 'message': 'Payment initiated successfully',
                 'checkout_request_id': result['checkout_request_id'],
                 'merchant_request_id': result['merchant_request_id'],
-                'billing_id': billing.id
-            }), 200
+                'billing_id': billing.id,
+                'amount': package.price,
+                'phone_number': phone_number
+            }
+            return jsonify(response_data), 200
         else:
             db.session.rollback()
             return jsonify({
