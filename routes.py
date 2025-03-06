@@ -21,17 +21,29 @@ def get_all_packages():
 
 
 
+#fetch packages for client
+@routes_bp.route('/packages/client', methods=['GET'])
+def get_packages_client():
+    packages = Package.query.all()  # Fetch all packages (no login required)
+    return jsonify([package.to_json() for package in packages])
+
+# For each package on pop-up modal
+@routes_bp.route('/packages/<int:package_id>', methods=['GET'])
+def get_each_package(package_id):
+    package = Package.query.get_or_404(package_id)
+    return jsonify(package.to_json())
+
 @routes_bp.route('/packages', methods=['GET'])
 @jwt_required()
 def get_packages():
-    current_user_id = get_jwt_identity()  
-    agency= Agency.query.get(current_user_id) 
+    current_user_id = get_jwt_identity()
+    agency= Agency.query.get(current_user_id)
 
     if not agency:
         return jsonify({'error': 'Unauthorized access'}), 403
 
-       
-    packages = Package.query.filter_by(agency=agency).all() 
+
+    packages = Package.query.filter_by(agency=agency).all()
     return jsonify([package.to_json() for package in packages])
 
 @routes_bp.route('/packages', methods=['POST'])
@@ -111,7 +123,7 @@ def create_package():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-    
+
 
 
 @routes_bp.route('/packages/book', methods=['POST'])
@@ -126,10 +138,10 @@ def book_now():
             'customer_message': 'Failed request',
             'status': 'Failed'
         }), 400
-    
+
     package_id = data['package_id']
-    
-    
+
+    # Get the client information
     client = User.query.get(current_client_id)
     if not client:
         return jsonify({
@@ -153,7 +165,7 @@ def book_now():
         package_id=package_id,
         status='Pending'
     ).first()
-    
+
     if existing_booking:
         return jsonify({
             'message': 'Failed',
@@ -179,11 +191,11 @@ def book_now():
         package_id=package_id,
         user_id=current_client_id,
         amount=price,
-        payment_status='Pending',  
-        phone_number=client.phone_number,  
-        checkoutID=None, 
+        payment_status='Pending',
+        phone_number=client.phone_number,
+        checkoutID=None,
         response_description=None,
-        customer_message='You have successfully booked' 
+        customer_message='You have successfully booked'
     )
     db.session.add(new_billing)
     db.session.commit()
@@ -193,7 +205,7 @@ def book_now():
         user_id=current_client_id,
         package_id=package_id,
         booking_date=datetime.utcnow(),
-        status='Successful',  
+        status='Successful',
         billing_id=new_billing.id,
         agency_id=agency.id  
     )
@@ -220,13 +232,13 @@ def create_review():
     current_user_id = get_jwt_identity()
     data = request.get_json()
 
-    
+
     if not data or 'rating' not in data or 'review_texts' not in data or 'package_id' not in data:
         return jsonify({'error': 'must put all the credentials '}), 400
 
     package_id = data['package_id']
 
-    
+
     client = User.query.get(current_user_id)
     if not client:
         return jsonify({'error': 'Only users can make reviews'}), 400
@@ -244,20 +256,20 @@ def create_review():
     if existant_review:
         return jsonify({'error': 'You have already reviewed this package'}), 400
 
-    
+
     new_review = Review(
         user_id=current_user_id,
         package_id=package_id,
         rating=data['rating'],
         review_texts=data['review_texts'],
         date=datetime.utcnow(),
-        image=data.get('image')  
+        image=data.get('image')
     )
 
     db.session.add(new_review)
     db.session.commit()
 
-    
+
     return jsonify({
         'message': 'You have successfully reviewed this package',
         'user_id': current_user_id,
@@ -280,7 +292,7 @@ def get_reviews():
 
     if not user:
         return jsonify({"message":"only users can access their reviews"}),400
-    
+
     reviews = Review.query.filter_by(user=user).all()
 
     return jsonify([review.to_json() for review in reviews])
@@ -334,24 +346,6 @@ def get_package_reviews_for_agency():
         'status': 'Successful',
         'reviews': [review.to_json() for review in reviews]
     }), 200
-
-# @routes_bp.route('/bookings', methods=['GET'])
-# @jwt_required()
-
-# def get_bookings():
-#     current_user_id = get_jwt_identity()
-
-#     agency = Agency.query.get(current_user_id)
-
-#     if not agency:
-#         return jsonify({'message':"only agencies can access this info"}),400
-    
-
-#     bookings = Booking.query.filter_by(agency=agency).all()
-
-#     return jsonify([booking.to_json() for booking in bookings])
-    
-
 @routes_bp.route('/bookings', methods=['GET'])
 @jwt_required()
 def get_bookings():
@@ -392,7 +386,7 @@ def get_bookings():
     booking_data = []
     for booking, first_name, email, price, location, package_name in bookings:
         booking_data.append({
-            
+
             'user_first_name': first_name,
             'user_email': email,
             'price_paid': price,
@@ -406,46 +400,18 @@ def get_bookings():
         'status': 'Successful',
         'bookings': booking_data
     }), 200
-
-# @routes_bp.route('/package/delete', methods=['DELETE'])
-# @jwt_required()
-
-# def delete_package():
-#     current_user_id = get_jwt_identity()
-
-#     agency = Agency.query.get(current_user_id)
-
-#     if not agency:
-#         return jsonify({'message':'only agencies can access info'}),400
-    
-#     package = Package.query.filter_by(agency=agency).all()
-
-#     if not package:
-#         return jsonify({"message":"package not found"}),400
-    
-    
-  
-
-@routes_bp.route('/package/delete', methods=['DELETE'])
+@routes_bp.route('/package/delete/<int:package_id>', methods=['DELETE'])
 @jwt_required()
-def delete_package():
+def delete_package(package_id):
     current_user_id = get_jwt_identity()
 
-    
+    # Check if the current user is an agency
     agency = Agency.query.get(current_user_id)
-
     if not agency:
         return jsonify({'message': 'Only agencies can access this information'}), 400
 
-    
-    package_id = request.json.get('package_id')
-
-    if not package_id:
-        return jsonify({'message': 'Package ID is required'}), 400
-
-    
+    # Find the package belonging to the agency using the package_id from the URL
     package = Package.query.filter_by(id=package_id, agency_id=agency.id).first()
-
     if not package:
         return jsonify({"message": "Package not found or doesn't belong to your agency"}), 400
 
@@ -466,18 +432,18 @@ def delete_package():
         for billing in package.billings:
             db.session.delete(billing)
 
-       
+        # Delete the package
         db.session.delete(package)
         db.session.commit()
+
         return jsonify({"message": "Package and associated records deleted successfully"}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": f"Failed to delete package: {str(e)}"}), 500
-
-        
-@routes_bp.route('/package/update', methods=['PUT'])
+ 
+@routes_bp.route('/packages/update/<int:package_id>', methods=['PUT'])
 @jwt_required()
-def update_package():
+def update_package(package_id):
     try:
         current_user_id = get_jwt_identity()
         agency = Agency.query.get(current_user_id)
@@ -485,70 +451,57 @@ def update_package():
         if not agency:
             return jsonify({'message': 'Only agencies can access this information'}), 403
 
-        # Handle both form data and JSON data
-        package_id = request.form.get('package_id') or request.json.get('package_id')
-        package_name = request.form.get('package_name') or request.json.get('package_name')
-        price = request.form.get('price') or request.json.get('price')
-        location = request.form.get('location') or request.json.get('location')
-        day_count = request.form.get('day_count') or request.json.get('day_count')
-        package_type = request.form.get('package_type') or request.json.get('package_type')
-        inclusions = request.form.get('inclusions') or request.json.get('inclusions')
-        exclusions = request.form.get('exclusions') or request.json.get('exclusions')
-
-        if not package_id:
-            return jsonify({'message': 'Package ID is required'}), 400
-
-        try:
-            package_id = int(package_id)
-        except ValueError:
-            return jsonify({'message': 'Valid Package ID is required'}), 400
-
         package = Package.query.filter_by(id=package_id, agency_id=agency.id).first()
 
         if not package:
             return jsonify({"message": "Package not found or doesn't belong to your agency"}), 404
 
-        # Update text fields if provided
-        if package_name:
-            package.package_name = package_name
-        if price:
-            package.price = float(price)
-        if location:
-            package.location = location
-        if day_count:
-            package.day_count = int(day_count)
-        if package_type:
-            package.package_type = package_type
-        if inclusions:
-            package.inclusions = inclusions
-        if exclusions:
-            package.exclusions = exclusions
+       
+        data = request.get_json() if request.is_json else request.form
 
-        # Handle photo uploads if present
+        
+        if "package_name" in data:
+            package.package_name = data["package_name"]
+        if "price" in data:
+            try:
+                package.price = float(data["price"])
+            except ValueError:
+                return jsonify({"message": "Invalid price format"}), 400
+        if "location" in data:
+            package.location = data["location"]
+        if "day_count" in data:
+            try:
+                package.day_count = int(data["day_count"])
+            except ValueError:
+                return jsonify({"message": "Invalid day count format"}), 400
+        if "package_type" in data:
+            package.package_type = data["package_type"]
+        if "inclusions" in data:
+            package.inclusions = data["inclusions"]
+        if "exclusions" in data:
+            package.exclusions = data["exclusions"]
+
+       
         uploaded_photos = []
         if 'photos' in request.files:
             photos = request.files.getlist('photos')
             for photo_file in photos:
-                if photo_file.filename != '':
-                    # Upload to Cloudinary
+                if photo_file.filename:
                     upload_result = upload_photo(photo_file)
                     
-                    if upload_result['success']:
-                        # Save photo URL to database
+                    if upload_result.get('success'):
                         new_photo = Photo(
                             package_id=package_id,
                             photo_url=upload_result['url']
                         )
                         db.session.add(new_photo)
-                        uploaded_photos.append({
-                            'url': upload_result['url']
-                        })
+                        uploaded_photos.append({'url': upload_result['url']})
 
         db.session.commit()
 
         response_data = {
             "message": "Package updated successfully",
-            "package": package.to_json()
+            "package": package.to_json(),
         }
         
         if uploaded_photos:
@@ -559,6 +512,7 @@ def update_package():
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": "An error occurred while updating the package", "error": str(e)}), 500
+
 
 @routes_bp.route('/packages/upload-photo', methods=['POST'])
 @jwt_required()
