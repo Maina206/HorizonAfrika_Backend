@@ -27,7 +27,7 @@ def upload_photo(file, folder="horizon_afrika"):
         dict: Dictionary containing the upload result including the URL
     """
     try:
-        upload_result = cloudinary.config.uploader.upload(
+        upload_result = cloudinary.uploader.upload(
             file,
             folder=folder,
             resource_type="auto"
@@ -38,6 +38,7 @@ def upload_photo(file, folder="horizon_afrika"):
             "public_id": upload_result.get('public_id')
         }
     except Exception as e:
+        print(e)
         return {
             "success": False,
             "error": str(e)
@@ -54,7 +55,7 @@ def delete_photo(public_id):
         dict: Dictionary containing the deletion result
     """
     try:
-        result = cloudinary.config.uploader.destroy(public_id)
+        result = cloudinary.uploader.destroy(public_id)
         return {
             "success": True,
             "result": result
