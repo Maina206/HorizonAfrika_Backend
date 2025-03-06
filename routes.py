@@ -9,18 +9,6 @@ from Mpesa import MpesaAPI
 
 routes_bp = Blueprint('routes', __name__)
 
-@routes_bp.route('/packages/all', methods=['GET'])
-def get_all_packages():
-    try:
-        packages = Package.query.all()
-        
-        return jsonify([package.to_json() for package in packages]), 200
-
-    except Exception as e:
-        return jsonify({'error': 'An error occurred', 'message': str(e)}), 500
-
-
-
 #fetch packages for client
 @routes_bp.route('/packages/client', methods=['GET'])
 def get_packages_client():
