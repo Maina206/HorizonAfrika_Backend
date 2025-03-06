@@ -38,7 +38,7 @@ def get_packages():
         package_json = package.to_json()
 
         photos = Photo.query.filter_by(package_id=package.id).all()
-        package_json['photos'] = [photo.photo_url for photo in package.photos]
+        package_json['photos'] = [photo.photo_url for photo in photos]
         packages_data.append(package_json)
 
     return jsonify(packages_data), 200
@@ -58,6 +58,8 @@ def create_package():
         
         if not data:
             return jsonify({"message": "No data provided"}), 400
+        
+        print ("Debug: Received package data:", data)
 
         required_fields = ['package_name', 'price', 'day_count', 'location', 'package_type', 'inclusions', 'exclusions']
         if not all(field in data for field in required_fields):
@@ -85,18 +87,19 @@ def create_package():
         # Handle photo uploads if present
         uploaded_photos = []
         if 'photos' in request.files:
-            photos = request.files.getlist('photos') # This handles receiving of photos
-            print(request.files.getlist('photos'))
+         photos = request.files.getlist('photos') # This handles receiving of photos
+         print(request.files.getlist('photos'))
 
-            for photo_file in photos:
+        for photo_file in photos:
                 if photo_file.filename != '':
                     # Upload to Cloudinary
                     upload_result = upload_photo(photo_file)
                     print(upload_result)
                     
-                    if upload_result['success']:
+                    if isinstance(upload_result, dict) and 'success' in upload_result:
+                        if upload_result['success']:
                         # Save photo URL to database
-                        new_photo = Photo(
+                            new_photo = Photo(
                             package_id=new_package.id,
                             photo_url=upload_result['url']
                         )
@@ -478,6 +481,8 @@ def update_package(package_id):
         if "exclusions" in data:
             package.exclusions = data["exclusions"]
 
+# Preserve old photos
+        existing_photos = [photo.photo_url for photo in Photo.query.filter_by(package_id=package.id).all()]
        
         uploaded_photos = []
         if 'photos' in request.files:
@@ -499,6 +504,7 @@ def update_package(package_id):
         response_data = {
             "message": "Package updated successfully",
             "package": package.to_json(),
+            "photos": existing_photos + uploaded_photos
         }
         
         if uploaded_photos:
