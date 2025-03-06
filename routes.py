@@ -44,7 +44,16 @@ def get_packages():
 
 
     packages = Package.query.filter_by(agency=agency).all()
-    return jsonify([package.to_json() for package in packages])
+    packages_data = []
+
+    for package in packages:
+        package_json = package.to_json()
+
+        photos = Photo.query.filter_by(package_id=package.id).all()
+        package_json['photos'] = [photo.photo_url for photo in package.photos]
+        packages_data.append(package_json)
+
+    return jsonify(packages_data), 200
 
 @routes_bp.route('/packages', methods=['POST'])
 @jwt_required()
