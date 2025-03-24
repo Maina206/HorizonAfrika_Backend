@@ -1,5 +1,10 @@
 from Config.config import create_app
 from flask_jwt_extended import JWTManager
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # This will load environment variables from .env file
+
 
 app = create_app()
 

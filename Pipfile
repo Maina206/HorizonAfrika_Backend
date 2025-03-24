@@ -12,6 +12,9 @@ flask-cors = "*"
 python-dotenv = "*"
 bcrypt = "*"
 flask-jwt-extended = "*"
+cloudinary = "*"
+urllib3 = "*"
+requests = "*"
 
 [dev-packages]
 
